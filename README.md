@@ -10,7 +10,7 @@
 
 ## 安装方法
 1. 确保浏览器已安装 [Tampermonkey](https://www.tampermonkey.net/) 或 Violentmonkey 扩展。
-2. 点击下方的 [安装链接](https://www.tampermonkey.net/script_installation.php#url=https://github.com/R03montia/note-ms-debounce-optimize-script/raw/refs/heads/main/note-ms-script/note-ms.user.js)。
+2. 点击 [此处](https://www.tampermonkey.net/script_installation.php#url=https://github.com/R03montia/note-ms-debounce-optimize-script/raw/refs/heads/main/note-ms-script/note-ms.user.js)。
 3. 在弹出的页面中点击 **安装 (Install)**。
 
 ## 配置参数
