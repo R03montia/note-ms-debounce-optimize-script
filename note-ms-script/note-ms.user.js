@@ -2,6 +2,8 @@
 // @name         Note.ms 智能防抖保存优化 v5.0
 // @namespace    http://tampermonkey.net/
 // @version      5.0
+// @downloadURL  https://raw.githubusercontent.com/R03montia/note-ms-debounce-optimize-script/main/note-ms-script/note-ms.user.js
+// @updateURL    https://raw.githubusercontent.com/R03montia/note-ms-debounce-optimize-script/main/note-ms-script/note-ms.user.js
 // @description  修复保存失效 + 5秒防抖 + 删除冷却 + 循环闲置 + 无变更静默 + 兼容中英文
 // @match        *://note.ms/*
 // @grant        none
