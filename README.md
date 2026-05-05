@@ -11,7 +11,7 @@
 ## 安装方法
 1. 确保浏览器已安装 [Tampermonkey](https://www.tampermonkey.net/) 或 Violentmonkey 扩展。
 2. 点击 [此处](https://www.tampermonkey.net/script_installation.php#url=https://github.com/R03montia/note-ms-debounce-optimize-script/raw/refs/heads/main/note-ms-script/note-ms.user.js)。
-3. 在弹出的页面中点击 **安装 (Install)**。
+3. 耐心等待数秒。
 
 ## 配置参数
 脚本内部 `CONFIG` 对象支持微调，可以在此处自定义风味文本内容和数量（需修改源码）：
