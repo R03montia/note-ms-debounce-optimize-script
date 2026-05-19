@@ -1,10 +1,8 @@
 // ==UserScript==
-// @name         Note.ms 智能防抖保存优化 v5.0
+// @name         Note.ms 智能防抖保存优化 v5.1
 // @namespace    http://tampermonkey.net/
-// @version      5.0
-// @downloadURL  https://raw.githubusercontent.com/R03montia/note-ms-debounce-optimize-script/main/note-ms-script/note-ms.user.js
-// @updateURL    https://raw.githubusercontent.com/R03montia/note-ms-debounce-optimize-script/main/note-ms-script/note-ms.user.js
-// @description  修复保存失效 + 5秒防抖 + 删除冷却 + 循环闲置 + 无变更静默 + 兼容中英文
+// @version      5.1
+// @description  修复 isTrusted 保存失效 + 5秒防抖 + 删除冷却 + 循环闲置 + 无变更静默 + 兼容中英文
 // @match        *://note.ms/*
 // @grant        none
 // @run-at       document-end
@@ -13,7 +11,7 @@
 (function() {
     'use strict';
     const CONFIG = {
-        saveDelay: 5000,               // 自动保存间隔(ms)
+        saveDelay: 5000,               // 防抖确认间隔(ms)
         idleTimeout: 30000,            // 闲置触发间隔(ms)
         deletionCooldown: 5000,        // 删除提示最小触发间隔(ms)
         maxRetries: 5,
@@ -39,7 +37,7 @@
     let lastSavedContent = '', lastLength = 0;
     let isComposing = false, lastToastTime = 0;
     let lastDeletionToastTime = 0;
-    let editor = null; 
+    let editor = null;
 
     // 轻量提示组件
     const showToast = (msg, duration = 2000) => {
@@ -86,16 +84,13 @@
         idleTimer = setTimeout(showIdleAndReschedule, CONFIG.idleTimeout);
     };
 
-    // 触发原站保存：向原节点派发多类型事件 + 强制模糊触发
+    // 触发原站保存（Ctrl+S 手动保存时尽力触发；原生 input 事件已不受阻拦，原站自行处理）
     const triggerSave = () => {
         if (!editor) return;
         try {
-            // 1. 派发标准事件（兼容 fetch/XHR 监听）
             editor.dispatchEvent(new Event('input', { bubbles: true, cancelable: true }));
             editor.dispatchEvent(new Event('change', { bubbles: true, cancelable: true }));
-            // 2. 派发 blur 事件（很多轻量记事本依赖 blur 触发保存）
             editor.dispatchEvent(new Event('blur', { bubbles: true, cancelable: true }));
-            // 3. 强制更新 lastSavedContent，避免重复保存
             lastSavedContent = getContent(editor);
             lastLength = getLength(lastSavedContent);
         } catch (e) { console.warn('[Note.ms] 保存事件异常:', e); }
@@ -111,21 +106,19 @@
         resetIdleTimer();
 
         // IME 防护
-        editor.addEventListener('compositionstart', () => isComposing = true, { capture: true });
+        editor.addEventListener('compositionstart', () => isComposing = true);
         editor.addEventListener('compositionend', () => {
             isComposing = false;
-            // 选词结束后触发一次保存检查
             handleInputLogic();
-        }, { capture: true });
+        });
 
-        // 核心：在捕获阶段拦截 input 事件，阻止原站高频处理
-        editor.addEventListener('input', (e) => {
+        // 冒泡阶段监听——不再拦截，让原生事件自然到达原站
+        editor.addEventListener('input', () => {
             if (isComposing) return;
-            e.stopPropagation(); // 阻止事件冒泡到原站监听器
             handleInputLogic();
-        }, { capture: true }); // 关键：使用捕获阶段拦截
+        });
 
-        //  Ctrl+S 强制保存
+        // Ctrl+S 强制保存
         editor.addEventListener('keydown', (e) => {
             if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 's') {
                 e.preventDefault();
@@ -139,7 +132,7 @@
         return true;
     };
 
-    // 提取输入处理逻辑，供 compositionend 复用
+    // 输入处理逻辑（供 input 和 compositionend 复用）
     const handleInputLogic = () => {
         if (!editor) return;
 
@@ -149,7 +142,7 @@
         const current = getContent(editor);
         const currentLen = getLength(current);
 
-        // 🗑️ 删除反馈 + 5秒冷却
+        // 删除反馈 + 5秒冷却
         if (currentLen < lastLength) {
             const now = Date.now();
             if (now - lastDeletionToastTime >= CONFIG.deletionCooldown) {
@@ -159,12 +152,13 @@
             }
         }
 
-        // 仅当内容真正变化时才设置保存定时器
+        // 内容变化时设置防抖确认定时器
+        // 原站已通过可信原生事件自行保存，此处仅更新内部状态 + 提示
         if (current !== lastSavedContent) {
             saveTimer = setTimeout(() => {
                 const toSave = getContent(editor);
                 if (toSave !== lastSavedContent) {
-                    triggerSave();
+                    lastSavedContent = toSave;
                     showToast('✅', 800);
                 }
             }, CONFIG.saveDelay);
